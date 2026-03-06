@@ -1,0 +1,20 @@
+/build/
+/obj-*/
+/.idea/
+/.vscode/
+/.DS_Store
+CMakeUserPresets.json
+
+# Common package build artifacts
+debian/tmp/
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+
+# Local package build outputs
+/*.deb
+/*.changes
+/*.buildinfo
+/*.dsc
+/*.tar.*
+/*.build
