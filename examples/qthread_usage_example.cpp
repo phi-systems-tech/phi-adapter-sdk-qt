@@ -7,7 +7,6 @@
 #include <thread>
 
 #include <QCoreApplication>
-#include <QEventLoop>
 #include <QTimer>
 
 #include "phi/adapter/sdk/qt/instance_execution_backend_qt.h"
@@ -199,14 +198,24 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    while (g_running.load()) {
-        if (!host.pollOnce(std::chrono::milliseconds(250), &error)) {
-            std::cerr << "host poll failed: " << error << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    QTimer pollTimer;
+    pollTimer.setInterval(25);
+    pollTimer.setSingleShot(false);
+    pollTimer.start();
+    QObject::connect(&pollTimer, &QTimer::timeout, [&]() {
+        if (!g_running.load()) {
+            pollTimer.stop();
+            app.quit();
+            return;
         }
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 5);
-    }
 
+        if (!host.pollOnce(std::chrono::milliseconds(0), &error)) {
+            std::cerr << "host poll failed: " << error << std::endl;
+            return;
+        }
+    });
+
+    app.exec();
     host.stop();
     return 0;
 }

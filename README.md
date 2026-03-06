@@ -58,6 +58,11 @@ See `examples/qthread_usage_example.cpp` for:
 - `onChannelInvoke(...)` that schedules work via `QTimer::singleShot(...)`
 - immediate and async completion paths that both call `sendResult(...)`
 - explicit error/failure responses for unsupported inputs
+- poll loop integration via a `QTimer` callback (`app.exec()`), so you don’t need a manual
+  `while` + sleep loop.
+
+Note: `SidecarHost::pollOnce(...)` is still required for dispatching transport/input frames; it is
+just moved into the Qt event loop timer callback instead of a manual poll loop.
 
 ## License
 
