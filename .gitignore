@@ -10,6 +10,10 @@ debian/tmp/
 debian/.debhelper/
 debian/debhelper-build-stamp
 debian/files
+debian/*.debhelper.log
+debian/*.substvars
+debian/*/DEBIAN/
+debian/*/usr/
 
 # Local package build outputs
 /*.deb
