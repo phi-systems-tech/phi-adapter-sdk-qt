@@ -6,6 +6,7 @@ Qt helper package for `phi-adapter-sdk`.
 
 - `phi::adapter-sdk-qt` shared library helper for Qt event-loop based adapter instance execution.
 - Optional runtime dependency on Qt6 Core.
+- CMake project and Debian packaging for `phi-adapter-sdk-qt` / `phi-adapter-sdk-qt-dev`.
 
 ## Purpose
 

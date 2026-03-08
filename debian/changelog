@@ -1,0 +1,6 @@
+phi-adapter-sdk-qt (0.1.3-1) trixie; urgency=medium
+
+  * Move Qt execution backend into its own source repository.
+  * Build and package Qt helper independently from phi-adapter-sdk.
+
+ -- Marius Schumacher <marius.schumacher@phisys.com>  Sun, 08 Mar 2026 12:05:00 +0000
