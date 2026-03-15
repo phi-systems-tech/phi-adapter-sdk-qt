@@ -8,6 +8,24 @@ Qt helper package for `phi-adapter-sdk`.
 - Optional runtime dependency on Qt6 Core.
 - CMake project and Debian packaging for `phi-adapter-sdk-qt` / `phi-adapter-sdk-qt-dev`.
 
+## Debian Packaging Layout
+
+- `phi-adapter-sdk-qt` stays `Architecture: any` because it ships
+  `libphi_adapter_sdk_qt.so`
+- `phi-adapter-sdk-qt-dev` can be `Architecture: all` only if it contains only
+  headers and arch-neutral CMake metadata
+
+Recommended install layout:
+
+- runtime library: `usr/lib/<multiarch-triplet>/libphi_adapter_sdk_qt.so*`
+- headers: `usr/include/phi/adapter/sdk/qt/...`
+- CMake package config for the `-dev` package:
+  `usr/lib/cmake/phi-adapter-sdk-qt`
+
+For this project, prefer `usr/lib/cmake/...` over `usr/share/...` for CMake
+package config files. It is the less surprising Linux/CMake layout and works
+well with `find_package(... CONFIG)`.
+
 ## Purpose
 
 Provide a small helper backend so adapter instances can run their SDK callbacks inside a Qt
