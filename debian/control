@@ -15,7 +15,7 @@ Description: PHI adapter SDK Qt backend runtime
 
 Package: phi-adapter-sdk-qt-dev
 Section: libdevel
-Architecture: any
+Architecture: all
 Depends: ${misc:Depends}, phi-adapter-sdk-qt (= ${binary:Version}), phi-adapter-sdk-dev
 Description: PHI adapter SDK Qt backend development files
  Qt helper headers and CMake config for PHI adapters.

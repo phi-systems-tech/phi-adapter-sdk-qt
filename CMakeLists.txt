@@ -9,6 +9,8 @@ project(phi-adapter-sdk-qt
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+set(PHI_ADAPTER_SDK_QT_CMAKE_INSTALL_DIR "lib/cmake/phi-adapter-sdk-qt")
+
 find_package(Qt6 REQUIRED COMPONENTS Core)
 
 set(PHI_ADAPTER_SDK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../phi-adapter-sdk" CACHE PATH
@@ -74,13 +76,13 @@ install(
     EXPORT phi-adapter-sdk-qtTargets
     FILE phi-adapter-sdk-qtTargets.cmake
     NAMESPACE phi::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phi-adapter-sdk-qt
+    DESTINATION ${PHI_ADAPTER_SDK_QT_CMAKE_INSTALL_DIR}
 )
 
 configure_package_config_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/phi-adapter-sdk-qtConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/phi-adapter-sdk-qtConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phi-adapter-sdk-qt
+    INSTALL_DESTINATION ${PHI_ADAPTER_SDK_QT_CMAKE_INSTALL_DIR}
 )
 
 write_basic_package_version_file(
@@ -93,5 +95,5 @@ install(
     FILES
         ${CMAKE_CURRENT_BINARY_DIR}/phi-adapter-sdk-qtConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/phi-adapter-sdk-qtConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phi-adapter-sdk-qt
+    DESTINATION ${PHI_ADAPTER_SDK_QT_CMAKE_INSTALL_DIR}
 )
