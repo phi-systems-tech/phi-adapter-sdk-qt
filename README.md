@@ -62,6 +62,21 @@ MyFactory::createInstanceExecutionBackend(const phicore::adapter::v1::ExternalId
 - Keep one outstanding callback per request ID; never send multiple responses for same `cmdId`.
 - `sendResult(...)` returns `false` on enqueue error; log/report that error.
 
+## Threading and lifecycle rules
+
+- The Qt backend runs adapter instance callbacks on one dedicated `QThread`.
+- Create long-lived `QObject` helpers from `start()` or another backend callback so their affinity
+  is the backend thread.
+- Parent `QTimer`, `QTcpSocket`, reconnect timers and protocol/session managers to a backend-owned
+  runtime object.
+- Stop timers, sockets and reconnect loops in `stop()` before the runtime object is destroyed.
+- Do not move backend-owned `QObject` instances to the host thread and do not delete them from the
+  host thread.
+- Avoid `std::thread`/sleep loops for polling inside Qt adapters. Prefer `QTimer` and async Qt I/O.
+- On shutdown, the SDK waits for adapter `hostStop()` before stopping the Qt backend, then destroys
+  the backend target in its affinity thread. Adapter code must still release its own QObject tree
+  during `stop()`.
+
 ### Recommended status mapping
 
 - Missing required field => `CmdStatus::InvalidArgument`

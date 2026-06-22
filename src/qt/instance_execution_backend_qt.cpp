@@ -101,8 +101,18 @@ public:
 
         if (target) {
             QObject *rawTarget = target.release();
-            if (!QMetaObject::invokeMethod(rawTarget, "deleteLater", Qt::QueuedConnection))
+            if (rawTarget->thread() == QThread::currentThread()) {
                 delete rawTarget;
+            } else {
+                const bool deletedInExecutionThread = QMetaObject::invokeMethod(
+                    rawTarget,
+                    [rawTarget]() {
+                        delete rawTarget;
+                    },
+                    Qt::BlockingQueuedConnection);
+                if (!deletedInExecutionThread)
+                    delete rawTarget;
+            }
         }
 
         if (!thread)
