@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(phi-adapter-sdk-qt
-    VERSION 0.1.3
+    VERSION 0.2.0
     DESCRIPTION "Qt event-loop backend for phi-adapter-sdk"
     LANGUAGES CXX
 )
@@ -34,6 +34,33 @@ endif()
 if(NOT TARGET phi::adapter-sdk)
     message(FATAL_ERROR "phi-adapter-sdk target phi::adapter-sdk not found")
 endif()
+if(NOT TARGET phi::adapter-contract)
+    message(FATAL_ERROR "phi-adapter-sdk target phi::adapter-contract not found")
+endif()
+
+# Qt-facing wrapper over the canonical v1 adapter contract (header-only).
+# Single shared copy consumed by phi-core and Qt-based adapters; see
+# include/phi/adapter/qt/types.h for the contract policy.
+add_library(phi_adapter_contract_qt INTERFACE)
+add_library(phi::adapter-contract-qt ALIAS phi_adapter_contract_qt)
+
+set_target_properties(phi_adapter_contract_qt PROPERTIES
+    EXPORT_NAME adapter-contract-qt
+)
+
+target_compile_features(phi_adapter_contract_qt INTERFACE cxx_std_20)
+
+target_include_directories(phi_adapter_contract_qt
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_link_libraries(phi_adapter_contract_qt
+    INTERFACE
+        Qt6::Core
+        phi::adapter-contract
+)
 
 add_library(phi_adapter_sdk_qt SHARED
     src/qt/instance_execution_backend_qt.cpp
@@ -68,7 +95,14 @@ install(
 )
 
 install(
-    TARGETS phi_adapter_sdk_qt
+    DIRECTORY include/phi/adapter/qt
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/phi/adapter
+    FILES_MATCHING
+        PATTERN "*.h"
+)
+
+install(
+    TARGETS phi_adapter_sdk_qt phi_adapter_contract_qt
     EXPORT phi-adapter-sdk-qtTargets
 )
 

@@ -5,6 +5,10 @@ Qt helper package for `phi-adapter-sdk`.
 ## Contents
 
 - `phi::adapter-sdk-qt` shared library helper for Qt event-loop based adapter instance execution.
+- `phi::adapter-contract-qt` header-only Qt-facing wrapper over the canonical v1 adapter
+  contract (`phi/adapter/qt/*.h`). This is the **single shared copy** consumed by `phi-core`
+  and Qt-based adapters; per-repo copies of these headers are not allowed. Contract semantics
+  stay pinned to `phi::adapter-contract` (`phi/adapter/v1/*`) via `static_assert` guards.
 - Optional runtime dependency on Qt6 Core.
 - CMake project and Debian packaging for `phi-adapter-sdk-qt` / `phi-adapter-sdk-qt-dev`.
 
