@@ -14,6 +14,9 @@ namespace phicore::adapter::sdk::qt {
 
 namespace {
 
+// Grace period after QThread::terminate() before stop() gives up entirely.
+constexpr int kTerminateGraceMs = 250;
+
 class QtInstanceExecutionBackend final : public phicore::adapter::sdk::InstanceExecutionBackend
 {
 public:
@@ -25,7 +28,7 @@ public:
     ~QtInstanceExecutionBackend() override
     {
         phicore::adapter::v1::Utf8String ignoreError;
-        stop(std::chrono::seconds(3), &ignoreError);
+        stop(phicore::adapter::sdk::kShutdownBudget, &ignoreError);
     }
 
     bool start(phicore::adapter::v1::Utf8String *error = nullptr) override
@@ -129,7 +132,10 @@ public:
             if (error)
                 *error = "Timed out waiting for Qt execution backend stop";
             thread->terminate();
-            thread->wait(1000);
+            // Bounded tightly on purpose: the caller's shutdown budget is
+            // already spent at this point, and terminate() has been issued, so
+            // this only collects the corpse (see phi::sdk::kShutdownBudget).
+            thread->wait(kTerminateGraceMs);
             return false;
         }
         return true;
