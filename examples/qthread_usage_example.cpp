@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include "phi/adapter/sdk/qt/instance_execution_backend_qt.h"
+#include "phi/adapter/sdk/qt/sidecar_driver_qt.h"
 #include "phi/adapter/sdk/sidecar.h"
 
 namespace {
@@ -192,30 +193,25 @@ int main(int argc, char **argv)
     QThreadAdapterFactory factory;
     phi::SidecarHost host(socketPath, factory);
 
+    // The driver attaches the sidecar to the Qt event loop; no poll interval.
+    phi::qt::SidecarDriver driver(host);
+
     phi::Utf8String error;
-    if (!host.start(&error)) {
+    if (!driver.start(&error)) {
         std::cerr << "failed to start host: " << error << std::endl;
         return 1;
     }
 
-    QTimer pollTimer;
-    pollTimer.setInterval(25);
-    pollTimer.setSingleShot(false);
-    pollTimer.start();
-    QObject::connect(&pollTimer, &QTimer::timeout, [&]() {
-        if (!g_running.load()) {
-            pollTimer.stop();
+    // Signal handlers only flip a flag; a slow timer turns it into a clean
+    // Qt shutdown.
+    QTimer shutdownTimer;
+    QObject::connect(&shutdownTimer, &QTimer::timeout, [&]() {
+        if (!g_running.load())
             app.quit();
-            return;
-        }
-
-        if (!host.pollOnce(std::chrono::milliseconds(0), &error)) {
-            std::cerr << "host poll failed: " << error << std::endl;
-            return;
-        }
     });
+    shutdownTimer.start(250);
 
-    app.exec();
-    host.stop();
-    return 0;
+    const int execResult = app.exec();
+    driver.stop();
+    return execResult;
 }

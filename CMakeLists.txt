@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(phi-adapter-sdk-qt
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "Qt event-loop backend for phi-adapter-sdk"
     LANGUAGES CXX
 )
@@ -64,6 +64,7 @@ target_link_libraries(phi_adapter_contract_qt
 
 add_library(phi_adapter_sdk_qt SHARED
     src/qt/instance_execution_backend_qt.cpp
+    src/qt/sidecar_driver_qt.cpp
 )
 add_library(phi::adapter-sdk-qt ALIAS phi_adapter_sdk_qt)
 

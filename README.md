@@ -9,6 +9,10 @@ Qt helper package for `phi-adapter-sdk`.
   contract (`phi/adapter/qt/*.h`). This is the **single shared copy** consumed by `phi-core`
   and Qt-based adapters; per-repo copies of these headers are not allowed. Contract semantics
   stay pinned to `phi::adapter-contract` (`phi/adapter/v1/*`) via `static_assert` guards.
+- `phi::qt::SidecarDriver` (`phi/adapter/sdk/qt/sidecar_driver_qt.h`): drives a
+  `SidecarHost` from the Qt event loop by watching its poll descriptor with a
+  `QSocketNotifier`. No polling interval, no idle wakeups, and the Qt event loop
+  is never blocked by a sidecar poll.
 - Optional runtime dependency on Qt6 Core.
 - CMake project and Debian packaging for `phi-adapter-sdk-qt` / `phi-adapter-sdk-qt-dev`.
 
@@ -96,11 +100,12 @@ See `examples/qthread_usage_example.cpp` for:
 - `onChannelInvoke(...)` that schedules work via `QTimer::singleShot(...)`
 - immediate and async completion paths that both call `sendResult(...)`
 - explicit error/failure responses for unsupported inputs
-- poll loop integration via a `QTimer` callback (`app.exec()`), so you don’t need a manual
-  `while` + sleep loop.
+- event-loop integration via `phi::qt::SidecarDriver` (`app.exec()`), so you need neither a manual
+  `while` + sleep loop nor a poll timer.
 
-Note: `SidecarHost::pollOnce(...)` is still required for dispatching transport/input frames; it is
-just moved into the Qt event loop timer callback instead of a manual poll loop.
+Note: `SidecarHost::pollOnce(...)` still does the frame dispatching; the driver simply calls it
+when the host's poll descriptor becomes readable, which covers inbound frames and outbound work
+queued from worker threads.
 
 ## License
 
