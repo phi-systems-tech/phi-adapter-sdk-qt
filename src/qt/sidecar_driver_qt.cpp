@@ -59,12 +59,22 @@ bool SidecarDriver::start(phicore::adapter::v1::Utf8String *error)
 
     m_impl->notifier = new QSocketNotifier(pollFd, QSocketNotifier::Read, m_impl->parent);
     QObject::connect(m_impl->notifier, &QSocketNotifier::activated, m_impl->notifier, [this]() {
+        // Disabled while polling: a handler may pump the Qt event loop (nested
+        // QEventLoop, as blocking HTTP/socket helpers use), and the descriptor
+        // stays readable until pollOnce has consumed the events - which would
+        // otherwise re-enter this slot in a tight loop for the whole nested run.
+        m_impl->notifier->setEnabled(false);
+
         phicore::adapter::v1::Utf8String pollError;
         if (!m_impl->host.pollOnce(kNonBlockingPoll, &pollError)) {
             // Host/runtime failure: structured logging runs over the very path
             // that is failing here, so this stays on stderr.
             std::cerr << "[sidecar][pollFailure][host] " << pollError << std::endl;
         }
+
+        // stop() may have run from inside a handler.
+        if (m_impl->notifier)
+            m_impl->notifier->setEnabled(true);
     });
 
     // Queued outbound work may already be pending, and the descriptor only
