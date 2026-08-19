@@ -153,4 +153,9 @@ std::unique_ptr<phicore::adapter::sdk::InstanceExecutionBackend> createInstanceE
     return std::make_unique<QtInstanceExecutionBackend>();
 }
 
+std::unique_ptr<phicore::adapter::sdk::InstanceExecutionBackend> createFactoryExecutionBackend()
+{
+    return std::make_unique<QtInstanceExecutionBackend>();
+}
+
 } // namespace phicore::adapter::sdk::qt
