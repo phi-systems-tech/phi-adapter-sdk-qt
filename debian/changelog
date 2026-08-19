@@ -1,3 +1,13 @@
+phi-adapter-sdk-qt (0.4.0-1) trixie; urgency=medium
+
+  * Add phi::qt::createFactoryExecutionBackend() for
+    AdapterFactory::createFactoryExecutionBackend(): a Qt thread with an event
+    loop for factory-scope hooks, so blocking device probes no longer stall IPC
+    (F-31).
+  * Rebuild against phi-adapter-sdk 0.4.0 (AdapterFactory vtable change).
+
+ -- Marius Schumacher <marius.schumacher@phisys.com>  Wed, 19 Aug 2026 16:47:37 +0200
+
 phi-adapter-sdk-qt (0.3.0-1) trixie; urgency=medium
 
   * Add phi::qt::SidecarDriver: drives a SidecarHost from the Qt event loop via
