@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(phi-adapter-sdk-qt
-    VERSION 0.6.0
+    VERSION 0.6.1
     DESCRIPTION "Qt event-loop backend for phi-adapter-sdk"
     LANGUAGES CXX
 )
