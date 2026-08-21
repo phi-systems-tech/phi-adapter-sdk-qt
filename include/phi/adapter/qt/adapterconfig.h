@@ -16,7 +16,7 @@ struct Adapter {
     QString      name;        // display name for this instance
     QString      host;        // hostname / FQDN
     QString      ip;          // resolved IPv4 / IPv6 (optional)
-    quint16      port;        // port
+    quint16      port = 0;    // port
     QString      user;        // username / login
     QString      pw;          // password
     QString      token;       // token, app key
