@@ -1,3 +1,11 @@
+phi-adapter-sdk-qt (0.7.2-1) trixie; urgency=medium
+
+  * Depends on phi-adapter-sdk-dev (>= 0.8.0), which carries the TLS
+    config fields. The Qt SDK's tests build only when it is the top-
+    level project, so they no longer appear in a consumer's ctest.
+
+ -- Marius Schumacher <google@phisys.com>  Sun, 30 Aug 2026 14:49:57 +0200
+
 phi-adapter-sdk-qt (0.7.1-1) trixie; urgency=medium
 
   * The TLS vocabulary moves to the contract; this package keeps the
