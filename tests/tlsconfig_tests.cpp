@@ -1,11 +1,10 @@
-// The TLS fields every adapter offers, and what they mean.
+// The conversion from the contract's fields to the JSON a Qt adapter emits.
 //
-// The point of these living in the SDK is not that the code is long - it is
-// three fields - but that adapters would otherwise disagree about them: one
-// calling the switch `tls` and the next `useSsl`, one verifying by default and
-// the next not. So what is pinned here is the vocabulary and the defaults, and
-// especially the two answers that must never drift: off unless asked, and
-// verified when on.
+// The vocabulary is not tested here - it is tested where it lives, in the
+// contract. What is worth holding here is that nothing is lost or invented on
+// the way through: the keys, the defaults and the visibility rule that come out
+// as JSON are the ones the contract decided, and a value read back out of a
+// QJsonObject reaches the same answer the contract would.
 
 #include <phi/adapter/testing/check.h>
 
@@ -28,30 +27,26 @@ QJsonObject fieldNamed(const QJsonArray &fields, const QString &key)
     return {};
 }
 
-void testTheVocabularyIsTheOneEverybodyUses()
+void testTheContractsFieldsArriveIntactAsJson()
 {
     const QJsonArray fields = tlsConfigFields();
-    PHI_CHECK(fields.size() == 3);
+    PHI_CHECK(fields.size() == static_cast<int>(v1::tlsConfigFields().size()));
 
     const QJsonObject tls = fieldNamed(fields, QStringLiteral("tls"));
     PHI_CHECK(tls.value(QStringLiteral("type")).toString() == QStringLiteral("Boolean"));
-    // Off. An adapter pointed at a plain endpoint has to keep working, and an
-    // upgrade that silently starts requiring TLS would take every one of them
-    // off the air.
     PHI_CHECK(tls.value(QStringLiteral("default")).toBool() == false);
+    PHI_CHECK(!tls.value(QStringLiteral("label")).toString().isEmpty());
+    PHI_CHECK(!tls.value(QStringLiteral("description")).toString().isEmpty());
 
     const QJsonObject ca = fieldNamed(fields, QStringLiteral("tlsCaFile"));
     PHI_CHECK(ca.value(QStringLiteral("type")).toString() == QStringLiteral("String"));
 
     const QJsonObject verify = fieldNamed(fields, QStringLiteral("tlsVerifyHostname"));
     PHI_CHECK(verify.value(QStringLiteral("type")).toString() == QStringLiteral("Boolean"));
-    // On. This is the whole reason the fields are shared: an adapter that
-    // shipped this off would encrypt and authenticate nothing, and would look
-    // from the outside exactly like one that does both.
     PHI_CHECK(verify.value(QStringLiteral("default")).toBool() == true);
 }
 
-void testTheTwoDetailsAreOnlyAskedWhenTlsIsOn()
+void testTheVisibilityRuleSurvivesTheConversion()
 {
     const QJsonArray fields = tlsConfigFields();
     for (const QString &key : {QStringLiteral("tlsCaFile"),
@@ -61,76 +56,55 @@ void testTheTwoDetailsAreOnlyAskedWhenTlsIsOn()
         PHI_CHECK(visibility.value(QStringLiteral("fieldKey")).toString()
                   == QStringLiteral("tls"));
         PHI_CHECK(visibility.value(QStringLiteral("value")).toBool());
+        // Lower case, which is the spelling core parses back.
         PHI_CHECK(visibility.value(QStringLiteral("op")).toString() == QStringLiteral("equals"));
     }
-    // The switch itself is always shown, or nothing could turn the others on.
     PHI_CHECK(!fieldNamed(fields, QStringLiteral("tls"))
                    .contains(QStringLiteral("visibility")));
 }
 
 void testAnActionsFormCarriesTheFieldsToo()
 {
-    const QJsonArray fields = tlsConfigFields(QStringLiteral("probe"));
-    for (const QJsonValue &value : fields) {
+    for (const QJsonValue &value : tlsConfigFields(QStringLiteral("probe"))) {
         PHI_CHECK(value.toObject().value(QStringLiteral("parentActionId")).toString()
                   == QStringLiteral("probe"));
     }
-    // And an instance section's fields belong to no action.
     for (const QJsonValue &value : tlsConfigFields())
         PHI_CHECK(!value.toObject().contains(QStringLiteral("parentActionId")));
 }
 
-void testNothingSaidMeansOffAndVerified()
+void testReadingMetaReachesTheContractsAnswer()
 {
     // An instance made before the adapter offered these fields, which is every
     // instance that exists today.
-    const TlsSettings settings = tlsSettingsFrom({});
-    PHI_CHECK(!settings.enabled);
-    PHI_CHECK(settings.caFile.isEmpty());
-    PHI_CHECK(settings.verifyHostname);
-}
+    const TlsSettings none = tlsSettingsFrom({});
+    PHI_CHECK(!none.enabled);
+    PHI_CHECK(none.caFile.empty());
+    PHI_CHECK(none.verifyHostname);
 
-void testTheAnswerIsReadTheSameWhateverShapeItComesBackIn()
-{
-    // A stored setting has been through JSON, a form and a database, and comes
-    // back as whatever those left it as. Deciding this once is most of the
-    // point: `"false"` is a non-empty string and reads as true to anybody who
-    // writes the obvious thing.
-    PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tls"), true}}).enabled);
+    // And the shapes a stored setting comes back in, decided in the contract
+    // rather than here - the string "false" is not empty and would read as true
+    // to anybody who wrote the obvious thing.
     PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tls"), QStringLiteral("true")}}).enabled);
-    PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tls"), QStringLiteral("on")}}).enabled);
-    PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tls"), 1}}).enabled);
     PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tls"), QStringLiteral("false")}}).enabled);
-    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tls"), QStringLiteral("0")}}).enabled);
-    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tls"), 0}}).enabled);
-
-    // And a value nobody can make sense of falls to the safe answer, which is
-    // not the same one for both: off for the switch, on for the check.
-    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tls"), QStringLiteral("perhaps")}}).enabled);
+    PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tls"), 1}}).enabled);
+    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tlsVerifyHostname"), false}}).verifyHostname);
     PHI_CHECK(tlsSettingsFrom({{QStringLiteral("tlsVerifyHostname"),
                                 QStringLiteral("perhaps")}}).verifyHostname);
-    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tlsVerifyHostname"), false}}).verifyHostname);
-    PHI_CHECK(!tlsSettingsFrom({{QStringLiteral("tlsVerifyHostname"),
-                                 QStringLiteral("no")}}).verifyHostname);
-}
 
-void testTheCertificateIsReadWithoutItsSurroundingSpace()
-{
-    const TlsSettings settings = tlsSettingsFrom(
+    const TlsSettings withCa = tlsSettingsFrom(
         {{QStringLiteral("tls"), true},
          {QStringLiteral("tlsCaFile"), QStringLiteral("  /etc/ssl/broker.crt  ")}});
-    PHI_CHECK(settings.caFile == QStringLiteral("/etc/ssl/broker.crt"));
+    PHI_CHECK(withCa.caFile == "/etc/ssl/broker.crt");
 }
 
 } // namespace
 
 int main()
 {
-    testTheVocabularyIsTheOneEverybodyUses();
-    testTheTwoDetailsAreOnlyAskedWhenTlsIsOn();
+    testTheContractsFieldsArriveIntactAsJson();
+    testTheVisibilityRuleSurvivesTheConversion();
     testAnActionsFormCarriesTheFieldsToo();
-    testNothingSaidMeansOffAndVerified();
-    testTheAnswerIsReadTheSameWhateverShapeItComesBackIn();
-    testTheCertificateIsReadWithoutItsSurroundingSpace();
+    testReadingMetaReachesTheContractsAnswer();
     return phi::testing::report("tlsconfig_tests");
 }

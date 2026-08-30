@@ -1,96 +1,79 @@
 #include "phi/adapter/qt/tlsconfig.h"
 
+#include "phi/adapter/v1/enum_names.h"
+
 namespace phicore::adapter {
 
 namespace {
 
-QJsonObject onlyWhenTlsIsOn()
+/// A contract scalar as the JSON value it stands for.
+QJsonValue jsonOf(const v1::ScalarValue &value)
 {
-    QJsonObject visibility;
-    visibility.insert(QStringLiteral("fieldKey"), QString::fromLatin1(kTlsFieldKey));
-    visibility.insert(QStringLiteral("value"), true);
-    visibility.insert(QStringLiteral("op"), QStringLiteral("equals"));
-    return visibility;
+    if (const bool *flag = std::get_if<bool>(&value))
+        return QJsonValue(*flag);
+    if (const std::int64_t *number = std::get_if<std::int64_t>(&value))
+        return QJsonValue(static_cast<double>(*number));
+    if (const double *number = std::get_if<double>(&value))
+        return QJsonValue(*number);
+    if (const v1::Utf8String *text = std::get_if<v1::Utf8String>(&value))
+        return QJsonValue(QString::fromStdString(*text));
+    return QJsonValue();
 }
 
-QJsonObject field(const char *key, const char *type, const QString &label,
-                  const QString &description, const QJsonValue &defaultValue,
-                  const QString &parentActionId, const QJsonObject &visibility = {})
-{
-    QJsonObject out;
-    out.insert(QStringLiteral("key"), QString::fromLatin1(key));
-    out.insert(QStringLiteral("type"), QString::fromLatin1(type));
-    out.insert(QStringLiteral("label"), label);
-    out.insert(QStringLiteral("description"), description);
-    out.insert(QStringLiteral("default"), defaultValue);
-    if (!parentActionId.isEmpty())
-        out.insert(QStringLiteral("parentActionId"), parentActionId);
-    if (!visibility.isEmpty())
-        out.insert(QStringLiteral("visibility"), visibility);
-    return out;
-}
-
-/// Whether a value that may be a bool, a number or a string means yes.
-///
-/// A stored setting has been through JSON, a form and a database, and comes
-/// back as whatever those left it as. Deciding here rather than in each adapter
-/// is most of the point of this file: `"false"` is a non-empty string and reads
-/// as true to anybody who writes the obvious thing.
-bool truthOf(const QJsonValue &value, bool fallback)
+/// A JSON value as the contract scalar it stands for, so that the reading of it
+/// happens once, in the contract, and not once per adapter.
+v1::ScalarValue scalarOf(const QJsonValue &value)
 {
     if (value.isBool())
-        return value.toBool();
+        return v1::ScalarValue(value.toBool());
     if (value.isDouble())
-        return value.toDouble() != 0.0;
-    if (value.isString()) {
-        const QString text = value.toString().trimmed().toLower();
-        if (text == QLatin1String("true") || text == QLatin1String("1")
-            || text == QLatin1String("yes") || text == QLatin1String("on")) {
-            return true;
-        }
-        if (text == QLatin1String("false") || text == QLatin1String("0")
-            || text == QLatin1String("no") || text == QLatin1String("off")) {
-            return false;
-        }
-        return fallback;
-    }
-    return fallback;
+        return v1::ScalarValue(value.toDouble());
+    if (value.isString())
+        return v1::ScalarValue(value.toString().toStdString());
+    return v1::ScalarValue();
 }
 
 } // namespace
 
 QJsonArray tlsConfigFields(const QString &parentActionId)
 {
-    QJsonArray fields;
-    fields.append(field(kTlsFieldKey, "Boolean", QStringLiteral("TLS"),
-                        QStringLiteral("Encrypt the connection. Off unless the endpoint offers"
-                                       " it - a plain endpoint has to keep working."),
-                        QJsonValue(false), parentActionId));
-    fields.append(field(kTlsCaFileFieldKey, "String",
-                        QStringLiteral("CA certificate"),
-                        QStringLiteral("Path to a certificate or bundle to trust in addition to"
-                                       " the system store. Needed when the endpoint's"
-                                       " certificate was not signed by a public authority,"
-                                       " which is the usual case on a local network."),
-                        QJsonValue(QString()), parentActionId, onlyWhenTlsIsOn()));
-    fields.append(field(kTlsVerifyHostnameFieldKey, "Boolean",
-                        QStringLiteral("Check the certificate's hostname"),
-                        QStringLiteral("Require the certificate to name the address that was"
-                                       " dialled. Turn this off only when connecting by IP to a"
-                                       " certificate that names a host - the certificate is"
-                                       " still checked against the trusted authorities."),
-                        QJsonValue(true), parentActionId, onlyWhenTlsIsOn()));
-    return fields;
+    QJsonArray out;
+    for (const v1::AdapterConfigField &field :
+         v1::tlsConfigFields(parentActionId.toStdString())) {
+        QJsonObject object;
+        object.insert(QStringLiteral("key"), QString::fromStdString(field.key));
+        object.insert(QStringLiteral("type"),
+                      QString::fromStdString(
+                          v1::enum_names::enumNameFor("AdapterConfigFieldType", static_cast<int>(field.type))));
+        object.insert(QStringLiteral("label"), QString::fromStdString(field.label));
+        object.insert(QStringLiteral("description"), QString::fromStdString(field.description));
+        object.insert(QStringLiteral("default"), jsonOf(field.defaultValue));
+        if (!field.parentActionId.empty()) {
+            object.insert(QStringLiteral("parentActionId"),
+                          QString::fromStdString(field.parentActionId));
+        }
+        if (!field.visibility.fieldKey.empty()) {
+            QJsonObject visibility;
+            visibility.insert(QStringLiteral("fieldKey"),
+                              QString::fromStdString(field.visibility.fieldKey));
+            visibility.insert(QStringLiteral("value"), jsonOf(field.visibility.value));
+            visibility.insert(QStringLiteral("op"),
+                              QString::fromStdString(
+                                  v1::enum_names::enumNameFor("AdapterConfigVisibilityOp",
+                                                  static_cast<int>(field.visibility.op)))
+                                  .toLower());
+            object.insert(QStringLiteral("visibility"), visibility);
+        }
+        out.append(object);
+    }
+    return out;
 }
 
 TlsSettings tlsSettingsFrom(const QJsonObject &meta)
 {
-    TlsSettings settings;
-    settings.enabled = truthOf(meta.value(QString::fromLatin1(kTlsFieldKey)), false);
-    settings.caFile = meta.value(QString::fromLatin1(kTlsCaFileFieldKey)).toString().trimmed();
-    settings.verifyHostname =
-        truthOf(meta.value(QString::fromLatin1(kTlsVerifyHostnameFieldKey)), true);
-    return settings;
+    return v1::tlsSettingsFrom(scalarOf(meta.value(QString::fromLatin1(kTlsFieldKey))),
+                               scalarOf(meta.value(QString::fromLatin1(kTlsCaFileFieldKey))),
+                               scalarOf(meta.value(QString::fromLatin1(kTlsVerifyHostnameFieldKey))));
 }
 
 } // namespace phicore::adapter
