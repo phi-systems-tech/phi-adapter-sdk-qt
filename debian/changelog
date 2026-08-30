@@ -1,3 +1,10 @@
+phi-adapter-sdk-qt (0.7.1-1) trixie; urgency=medium
+
+  * The TLS vocabulary moves to the contract; this package keeps the
+    conversion to and from Qt's JSON types.
+
+ -- Marius Schumacher <google@phisys.com>  Sun, 30 Aug 2026 10:42:06 +0200
+
 phi-adapter-sdk-qt (0.7.0-1) trixie; urgency=medium
 
   * The TLS fields an adapter offers are decided here: tls, tlsCaFile,
