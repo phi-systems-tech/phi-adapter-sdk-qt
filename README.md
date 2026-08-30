@@ -110,3 +110,26 @@ queued from worker threads.
 ## License
 
 Apache License 2.0 (same as `phi-adapter-sdk`).
+
+## TLS fields
+
+An adapter that speaks its protocol over TLS gets the fields from
+`phi/adapter/qt/tlsconfig.h` rather than writing its own. Not because the code
+is long — it is three fields — but because adapters would otherwise disagree
+about them: one calling the switch `tls` and the next `useSsl`, one verifying
+the certificate by default and the next not. An operator would then have to
+learn each adapter's opinion about the same question, and the one that quietly
+accepts any certificate would look exactly like the one that does not.
+
+`tlsConfigFields()` returns them ready to append to a schema section, with the
+certificate and the hostname check shown only when the switch is on.
+`tlsSettingsFrom()` reads them back, so `"false"` and `false` and a missing key
+mean the same thing everywhere. The defaults are the safe ones: off unless the
+operator asked, and verified when on.
+
+There is deliberately no switch that trusts any certificate. Encryption without
+verification stops somebody reading the wire and does nothing about somebody
+standing in the middle of it — and unlike a browser, which at least shows a
+warning page, an adapter would connect silently while the interface said "TLS".
+An endpoint with a self-signed certificate has a correct answer already: name
+the certificate in `tlsCaFile`.

@@ -65,6 +65,7 @@ target_link_libraries(phi_adapter_contract_qt
 add_library(phi_adapter_sdk_qt SHARED
     src/qt/instance_execution_backend_qt.cpp
     src/qt/sidecar_driver_qt.cpp
+    src/qt/tlsconfig.cpp
 )
 add_library(phi::adapter-sdk-qt ALIAS phi_adapter_sdk_qt)
 
@@ -87,6 +88,12 @@ target_link_libraries(phi_adapter_sdk_qt
         Qt6::Core
         phi::adapter-sdk
 )
+
+option(PHI_ADAPTER_SDK_QT_BUILD_TESTS "Build the Qt SDK's tests" ON)
+if(PHI_ADAPTER_SDK_QT_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 install(
     DIRECTORY include/phi/adapter/sdk/qt
