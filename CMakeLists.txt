@@ -89,7 +89,7 @@ target_link_libraries(phi_adapter_sdk_qt
         phi::adapter-sdk
 )
 
-option(PHI_ADAPTER_SDK_QT_BUILD_TESTS "Build the Qt SDK's tests" ON)
+option(PHI_ADAPTER_SDK_QT_BUILD_TESTS "Build the Qt SDK's tests" ${PROJECT_IS_TOP_LEVEL})
 if(PHI_ADAPTER_SDK_QT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
