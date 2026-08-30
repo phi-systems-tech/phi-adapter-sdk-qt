@@ -1,3 +1,12 @@
+phi-adapter-sdk-qt (0.7.0-1) trixie; urgency=medium
+
+  * The TLS fields an adapter offers are decided here: tls, tlsCaFile,
+    tlsVerifyHostname, with a reader beside them so every adapter takes
+    the same answer from the same value. Off unless asked, and verified
+    when on.
+
+ -- Marius Schumacher <google@phisys.com>  Sun, 30 Aug 2026 10:37:10 +0200
+
 phi-adapter-sdk-qt (0.6.1-1) trixie; urgency=medium
 
   * Adapter::port defaults to 0. It was the one member of the struct without an
